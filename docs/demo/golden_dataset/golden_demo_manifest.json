@@ -1,0 +1,159 @@
+{
+  "generated_note": "Every value in this file is copied verbatim from an actual PraMaan API response produced by POSTing the listed image to the real, running backend (POST /api/scans). Nothing here is estimated, reconstructed, or hand-typed as an expected value that wasn't first observed from a live run.",
+  "rule_pack_version": "1",
+  "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
+  "cases": [
+    {
+      "id": "compliant_pending",
+      "product": "N/A — blocked",
+      "category": "N/A",
+      "image": null,
+      "case_type": "COMPLIANT",
+      "expected_verdict": "COMPLIANT",
+      "actual_verdict": null,
+      "status": "BLOCKED",
+      "required_fields": [
+        "manufacturer_packer_importer",
+        "common_generic_name",
+        "net_quantity",
+        "date_of_manufacture",
+        "retail_sale_price",
+        "consumer_care_details"
+      ],
+      "extracted_fields": null,
+      "confidence": null,
+      "legal_rule_version": "1",
+      "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
+      "notes": "No real product photo tested so far (21 photos total: 11 in the prior real-world validation round, plus 2 Saffola Masala Oats + 1 Monster Mango + 1 Tata Tea Premium + 5 Protinex + 1 Jain Soap since) reached automatic COMPLIANT. Best result: Tata Tea Premium reached REVIEW (up from a false NON_COMPLIANT before a genuine bug fix -- see attempts/tata_tea_premium/evidence.md) with 4 of 6 applicable fields PASSing, though 2 of those 4 PASSes carry corrupted evidence text from a multi-column OCR interleaving defect and should not be fully trusted despite their correct conclusion. The Jain Soap photo has the most complete single-panel declaration seen yet (all 6 fields present, single column) but is only 500x500px, far too low-resolution for OCR -- a pure input-quality problem, not a code defect, and the most promising re-shoot candidate. Fabricating a synthetic 'real product' photo was explicitly rejected as dishonest. See compliant_pending/README.md and compliant_pending/attempts/README.md for exact per-field blockers and the criteria a real candidate photo needs to meet.",
+      "attempts": [
+        {
+          "product": "Saffola Masala Oats, Classic Masala with Millets, 38 g",
+          "images": ["compliant_pending/attempts/saffola_masala_oats/front.jpg", "compliant_pending/attempts/saffola_masala_oats/back.jpg"],
+          "scan_ids": {"front": "a47c8a54025c472d8dcc5e15c091ce35", "back": "62f02af63b3447a08222c36e116b5800"},
+          "actual_verdict": "REVIEW",
+          "fields_passed": ["manufacturer_packer_importer"],
+          "ocr_mean_confidence": {"front": 31.1, "back": 64.5}
+        },
+        {
+          "product": "Monster Mango (Juiced Monster) energy drink",
+          "images": ["compliant_pending/attempts/monster_mango_energy_drink/photo.jpg"],
+          "scan_ids": {"photo": "9b604609b2eb438bbbe23b04a716e961"},
+          "actual_verdict": "REVIEW",
+          "fields_passed": [],
+          "ocr_mean_confidence": {"photo": 67.1}
+        },
+        {
+          "product": "Tata Tea Premium, 250 g",
+          "images": ["compliant_pending/attempts/tata_tea_premium/photo.png"],
+          "scan_ids": {"before_fix": "afa66e8d06b54e839eaf32d1e63d6684", "after_fix": "a97bfced95f9455786f7e6a3b9816d72"},
+          "actual_verdict_before_fix": "NON_COMPLIANT (false -- fixed this session, see evidence.md)",
+          "actual_verdict": "REVIEW",
+          "fields_passed": ["manufacturer_packer_importer", "common_generic_name", "date_of_manufacture", "retail_sale_price"],
+          "fields_passed_with_corrupted_evidence": ["manufacturer_packer_importer", "common_generic_name"],
+          "ocr_mean_confidence": {"photo": 80.6},
+          "bug_found_and_fixed": "false NON_COMPLIANT on retail_sale_price due to a two-line MRP declaration ('MRP Rs. X' / '(inclusive of all taxes)' on separate lines) -- see extraction.py _retail_price_continuation_span and backend/tests/test_extraction.py"
+        },
+        {
+          "product": "Protinex Rich Chocolate Flavour (health supplement, marketed by Nutricia/Danone), 400 g",
+          "images": ["compliant_pending/attempts/protinex/img1_front.jpg", "compliant_pending/attempts/protinex/img2_ingredients.jpg", "compliant_pending/attempts/protinex/img3_nutrition.jpg", "compliant_pending/attempts/protinex/img4_usage.jpg", "compliant_pending/attempts/protinex/img5_bottom_stamp.jpg"],
+          "scan_ids": {
+            "img1_front": "7afb892d9258495eafcf93c4ba96ef19",
+            "img2_ingredients": "cd0119db4aa14a3ea4dc4aa05d861082",
+            "img3_nutrition": "8fbd1b6956334d64808b56b2e717e9bf",
+            "img4_usage": "27188a46536b4f068cc3c6c284ced62d",
+            "img5_bottom_stamp": "a9e3af74a4334c889a4559931a12cac5"
+          },
+          "actual_verdict": "REVIEW (all 5 photos independently)",
+          "fields_passed": ["net_quantity (img3_nutrition only)"],
+          "ocr_mean_confidence": {"img1_front": 71.9, "img2_ingredients": 70.1, "img3_nutrition": 76.9, "img4_usage": 79.1, "img5_bottom_stamp": 33.9},
+          "notes": "This product's own label design deliberately splits the 6 required fields across 5 separate physical faces (front=branding only, side-panel=manufacturer, nutrition-table=net_quantity, usage-panel=consumer care text present but keyword-vocabulary gap, bottom stamp=batch/date/price but dot-matrix print too low-contrast for OCR at 33.9% confidence). No single photo can reach COMPLIANT under the one-photo-per-scan architecture regardless of OCR quality. One correct PASS (net_quantity, 400g, img3) and one correctly-confidence-gated near-miss (manufacturer at 45.5%, img2) -- no false verdicts. See compliant_pending/attempts/README.md."
+        },
+        {
+          "product": "Jain Soap (toilet soap, marketed by Marico), 150 g",
+          "images": ["compliant_pending/attempts/jain_soap/photo.png"],
+          "scan_ids": {"photo": "6953891c3ab5494490f1f9368c55421b"},
+          "actual_verdict": "REVIEW",
+          "fields_passed": [],
+          "ocr_mean_confidence": {"photo": 20.6},
+          "notes": "Best-organized single-panel declaration seen in this dataset (all 6 applicable fields present, single column, plain print) but the source image is only 500x500px/72dpi -- far below every other real photo tested -- so OCR recovered almost nothing (20.6% mean confidence, 0 of 7 fields found). Pure input-resolution problem, not a code defect; no fix attempted. Would be the strongest COMPLIANT candidate yet if re-photographed at native camera resolution."
+        }
+      ]
+    },
+    {
+      "id": "non_compliant_test_label",
+      "product": "PraMaan Test Labs — Herbal Bathing Soap (Test Sample)",
+      "category": "Controlled TEST/DEMO label (not a real commercial product)",
+      "image": "non_compliant_test_label/label.png",
+      "case_type": "NON_COMPLIANT",
+      "expected_verdict": "NON_COMPLIANT",
+      "actual_verdict": "NON_COMPLIANT",
+      "status": "COMPLETE",
+      "scan_id": "8fec5491e60c481aa33a6c9ed06369bc",
+      "required_fields": [
+        "manufacturer_packer_importer",
+        "common_generic_name",
+        "net_quantity",
+        "date_of_manufacture",
+        "retail_sale_price",
+        "consumer_care_details"
+      ],
+      "extracted_fields": {
+        "manufacturer_packer_importer": {"found": true, "confidence": 95.5, "raw_value": "PraMaan Test Labs Pvt Ltd, 7 Residency Road, Bengaluru 560025"},
+        "common_generic_name": {"found": true, "confidence": 95.8, "raw_value": "Herbal Bathing Soap (Test Sample)"},
+        "net_quantity": {"found": true, "confidence": 92.0, "raw_value": "125 g"},
+        "date_of_manufacture": {"found": true, "confidence": 96.0, "raw_value": "02/2026"},
+        "retail_sale_price": {"found": true, "confidence": 95.5, "raw_value": "Rs. 45.00"},
+        "consumer_care_details": {"found": true, "confidence": 82.0, "raw_value": "1800-000-1111, care@pramaan-test.example.com"},
+        "country_of_origin": {"found": false, "confidence": null, "raw_value": null}
+      },
+      "confidence": 92.9,
+      "violated_field": "retail_sale_price",
+      "violated_clause": "Rule 6(1)(e), Legal Metrology (Packaged Commodities) Rules, 2011",
+      "violation_reason": "MRP is declared as 'Rs. 45.00' but does not state it is inclusive of all taxes.",
+      "legal_rule_version": "1",
+      "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
+      "notes": "One deliberate violation (missing 'inclusive of all taxes' on the MRP line) against six otherwise-clean fields, isolating the FAIL. Verified reproducible via GET /api/scans/{id}/replay (see non_compliant_test_label/replay.json, reproduced: true)."
+    },
+    {
+      "id": "review_myfitness",
+      "product": "MyFitness Peanut Butter, 510 g",
+      "category": "Real camera photo of a real commercial product",
+      "image": "review_myfitness/photo.jpg",
+      "case_type": "REVIEW",
+      "expected_verdict": "REVIEW",
+      "actual_verdict": "REVIEW",
+      "status": "COMPLETE",
+      "scan_id": "b1891bebc9e942abba8c2ff818b2c363",
+      "required_fields": [
+        "manufacturer_packer_importer",
+        "common_generic_name",
+        "net_quantity",
+        "date_of_manufacture",
+        "retail_sale_price",
+        "consumer_care_details"
+      ],
+      "extracted_fields_before_correction": {
+        "manufacturer_packer_importer": {"found": false, "confidence": null, "raw_value": null},
+        "common_generic_name": {"found": false, "confidence": null, "raw_value": null},
+        "net_quantity": {"found": false, "confidence": null, "raw_value": null},
+        "date_of_manufacture": {"found": false, "confidence": null, "raw_value": null},
+        "retail_sale_price": {"found": true, "confidence": 19.0, "raw_value": "/USPR ."},
+        "consumer_care_details": {"found": false, "confidence": null, "raw_value": null},
+        "country_of_origin": {"found": false, "confidence": null, "raw_value": null}
+      },
+      "extracted_fields_after_human_correction": {
+        "manufacturer_packer_importer": {"found": true, "confidence": 100.0, "raw_value": "Tanvi Fitness Private Limited, InnoHouse, 2nd Floor, Plot No. 1, 4 Bay, Sector 32, Gurugram, Haryana 122001 (FSSAI Lic. No. 10824999000152)"},
+        "common_generic_name": {"found": false, "confidence": null, "raw_value": null},
+        "net_quantity": {"found": true, "confidence": 100.0, "raw_value": "510 g"},
+        "date_of_manufacture": {"found": true, "confidence": 100.0, "raw_value": "03.08.2026"},
+        "retail_sale_price": {"found": true, "confidence": 100.0, "raw_value": "Rs. 319.00 (Inclusive of all taxes)"},
+        "consumer_care_details": {"found": true, "confidence": 100.0, "raw_value": "care@myfitness.co.in, +91 7096699111"},
+        "country_of_origin": {"found": false, "confidence": null, "raw_value": null}
+      },
+      "confidence": null,
+      "legal_rule_version": "1",
+      "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
+      "notes": "Verdict remains REVIEW even after 5 of 6 applicable fields were corrected by a real inspector account against the physical package, because common_generic_name ('Peanut Butter') is not legible on this photo (it shows only the back label). This is deliberate and honest, not an oversight — see review_myfitness/evidence.md. Full audit trail in review_myfitness/audit_trail.json; reproducibility confirmed in review_myfitness/replay.json."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 155
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = [
+    "B008",  # Depends(...) in argument defaults is the standard FastAPI dependency-injection idiom, not a bug
+]
+
+[tool.ruff.lint.per-file-ignores]
+# conftest.py must set env vars before importing any app.* module (see its own
+# comment) — the resulting import order is deliberate, not an oversight.
+"tests/conftest.py" = ["E402"]

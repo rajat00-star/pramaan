@@ -1,0 +1,9 @@
+backend/.venv/
+__pycache__/
+*.pyc
+backend/pramaan.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/tests/fixtures/*.png
+.env
+.DS_Store

@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pramaan
+      POSTGRES_PASSWORD: pramaan_dev_password
+      POSTGRES_DB: pramaan
+    volumes:
+      - pramaan_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pramaan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://pramaan:pramaan_dev_password@db:5432/pramaan
+      SECRET_KEY: ${SECRET_KEY:-change-me-before-any-real-deployment}
+      TESSERACT_LANGS: ${TESSERACT_LANGS:-eng}
+      DEMO_USERS: ${DEMO_USERS:-citizen_demo:citizen123:citizen,inspector_demo:inspector123:inspector,admin_demo:admin123:department_admin}
+    ports:
+      - "8000:8000"
+    volumes:
+      - pramaan_uploads:/app/backend/uploads
+
+volumes:
+  pramaan_pgdata:
+  pramaan_uploads:

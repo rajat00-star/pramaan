@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PraMaan — Compliance Verdict System</title>
+<style>
+  :root {
+    --pass: #1b8a3d; --fail: #c0362c; --review: #b7791f; --na: #6b7280;
+    --bg: #f5f6f8; --card: #ffffff; --border: #dde1e6; --text: #1c2127;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: #10233f; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  header .brand h1 { margin: 0; font-size: 20px; }
+  header .brand p { margin: 4px 0 0; font-size: 13px; color: #b8c4d6; }
+  header .session { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .role-pill { background: #1c3a63; padding: 3px 10px; border-radius: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  nav.tabs { display: flex; gap: 4px; padding: 10px 24px 0; background: #10233f; }
+  nav.tabs button { background: transparent; color: #b8c4d6; border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  nav.tabs button.active { color: white; border-bottom-color: #4c8dff; font-weight: 600; }
+  main { max-width: 980px; margin: 24px auto; padding: 0 16px 64px; display: grid; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; }
+  .upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button { background: #10233f; color: white; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:disabled { background: #9aa4b2; cursor: not-allowed; }
+  button.secondary { background: #eef1f5; color: #10233f; }
+  button.link { background: transparent; color: #b8c4d6; padding: 4px 8px; text-decoration: underline; }
+  input[type=text], input[type=password] { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 14px; width: 220px; }
+  .verdict-banner { font-size: 22px; font-weight: 700; padding: 14px 18px; border-radius: 8px; text-align: center; border: 2px solid transparent; }
+  .verdict-COMPLIANT { background: #e6f6ea; color: var(--pass); border-color: var(--pass); }
+  .verdict-NON_COMPLIANT { background: #fbe9e7; color: var(--fail); border-color: var(--fail); }
+  .verdict-REVIEW { background: #fef3e0; color: var(--review); border-color: var(--review); }
+  .verdict-ERROR { background: #f1f1f1; color: #444; }
+  .verdict-banner::before { margin-right: 8px; }
+  .verdict-COMPLIANT::before { content: "✓"; }
+  .verdict-NON_COMPLIANT::before { content: "✕"; }
+  .verdict-REVIEW::before { content: "⚠"; }
+  .meta-row { font-size: 12px; color: #667; margin-top: 8px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: #6b7280; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; color: white; }
+  .badge-PASS { background: var(--pass); }
+  .badge-FAIL { background: var(--fail); }
+  .badge-REVIEW { background: var(--review); }
+  .badge-NOT_APPLICABLE { background: var(--na); }
+  pre { background: #0f1720; color: #d9e2ec; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+  .evidence-json { font-size: 11px; color: #444; background: #f6f7f9; padding: 6px; border-radius: 4px; max-width: 320px; overflow-x: auto; }
+  .image-wrap { position: relative; display: inline-block; max-width: 100%; }
+  .image-wrap img { max-width: 100%; display: block; border-radius: 6px; }
+  .image-wrap canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .conf { font-variant-numeric: tabular-nums; }
+  .conf-low { color: var(--review); font-weight: 700; }
+  .review-form { display: flex; gap: 6px; margin-top: 4px; }
+  .status-msg { font-size: 13px; color: #667; }
+  .error-box { background: #fbe9e7; color: var(--fail); padding: 10px 14px; border-radius: 6px; font-size: 13px; }
+  .rule-pack-footer { font-size: 12px; color: #6b7280; }
+  .hidden { display: none; }
+  .login-wrap { max-width: 360px; margin: 80px auto; }
+  .login-wrap .card { display: grid; gap: 10px; }
+  .login-wrap input { width: 100%; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .stat-tile { background: #f6f7f9; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-tile .n { font-size: 24px; font-weight: 700; }
+  .stat-tile .l { font-size: 11px; color: #6b7280; text-transform: uppercase; }
+  .demo-hint { font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+
+<div id="login-view" class="login-wrap hidden">
+  <div class="card">
+    <h2 style="text-align:center">PraMaan sign in</h2>
+    <input type="text" id="login-username" placeholder="Username" autocomplete="username" />
+    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" />
+    <button id="login-btn">Sign in</button>
+    <div class="error-box hidden" id="login-error"></div>
+    <p class="demo-hint">Demo accounts (local/dev only — see .env.example):<br>
+      citizen_demo / citizen123 · inspector_demo / inspector123 · admin_demo / admin123</p>
+  </div>
+</div>
+
+<div id="app-view" class="hidden">
+<header>
+  <div class="brand">
+    <h1>PraMaan</h1>
+    <p>Photo → OCR → structured fields → versioned legal rules → evidence-backed verdict.</p>
+  </div>
+  <div class="session">
+    <span id="session-username"></span>
+    <span class="role-pill" id="session-role"></span>
+    <button class="link" id="logout-btn">Sign out</button>
+  </div>
+</header>
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="scan-tab">Scan</button>
+  <button class="tab-btn hidden" id="dashboard-tab-btn" data-tab="dashboard-tab">Department Dashboard</button>
+</nav>
+
+<main id="scan-tab">
+
+  <section class="card">
+    <h2>1 · Upload a label photo</h2>
+    <div class="upload-row">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" />
+      <button id="analyze-btn">Analyze</button>
+      <span class="status-msg" id="status-msg"></span>
+    </div>
+  </section>
+
+  <section class="card hidden" id="error-card">
+    <h2>Error</h2>
+    <div class="error-box" id="error-box"></div>
+  </section>
+
+  <section class="card hidden" id="verdict-card">
+    <h2>2 · Verdict</h2>
+    <div class="verdict-banner" id="verdict-banner"></div>
+    <div class="meta-row" id="verdict-meta"></div>
+  </section>
+
+  <section class="card hidden" id="evidence-card">
+    <h2>3 · Evidence (image + OCR bounding boxes)</h2>
+    <div class="image-wrap">
+      <img id="preview-img" alt="uploaded label" />
+      <canvas id="bbox-canvas"></canvas>
+    </div>
+  </section>
+
+  <section class="card hidden" id="ocr-card">
+    <h2>4 · Raw OCR output</h2>
+    <div class="meta-row" id="ocr-meta" style="text-align:left; margin-bottom:6px;"></div>
+    <pre id="ocr-text"></pre>
+  </section>
+
+  <section class="card hidden" id="fields-card">
+    <h2>5 · Extracted fields</h2>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Source</th></tr></thead>
+      <tbody id="fields-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card hidden" id="rules-card">
+    <h2>6 · Rule evaluations</h2>
+    <table>
+      <thead><tr><th>Status</th><th>Field / Clause</th><th>Reason</th><th>Evidence</th><th>Review</th></tr></thead>
+      <tbody id="rules-body"></tbody>
+    </table>
+    <p class="demo-hint" id="review-permission-hint hidden"></p>
+  </section>
+
+  <section class="card hidden" id="history-card">
+    <h2>7 · Review / correction history (before / after / who / when)</h2>
+    <table>
+      <thead><tr><th>Field</th><th>Original</th><th>Corrected</th><th>Reviewer</th><th>Verdict change</th><th>When</th></tr></thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card hidden" id="audit-card">
+    <h2>8 · Audit trail <button class="secondary" id="load-audit-btn" style="margin-left:8px;font-size:11px;padding:3px 8px;">Load</button></h2>
+    <table>
+      <thead><tr><th>Event</th><th>Actor</th><th>Details</th><th>When</th></tr></thead>
+      <tbody id="audit-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card hidden" id="rulepack-card">
+    <div class="rule-pack-footer" id="rulepack-footer"></div>
+  </section>
+
+</main>
+
+<main id="dashboard-tab" class="hidden">
+  <section class="card">
+    <h2>Enforcement intelligence summary</h2>
+    <div class="stat-grid" id="dashboard-stats"></div>
+  </section>
+  <section class="card">
+    <h2>Violation frequency by field</h2>
+    <table>
+      <thead><tr><th>Field</th><th>Failures</th></tr></thead>
+      <tbody id="violation-body"></tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>Recent scans</h2>
+    <table>
+      <thead><tr><th>Scan</th><th>Status</th><th>Verdict</th><th>Confidence</th><th>When</th></tr></thead>
+      <tbody id="recent-scans-body"></tbody>
+    </table>
+  </section>
+</main>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let currentScanId = null;
+let currentImageNaturalSize = null;
+let session = null; // { token, username, role }
+
+function show(id) { $(id).classList.remove('hidden'); }
+function hide(id) { $(id).classList.add('hidden'); }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtConf(c) {
+  if (c === null || c === undefined) return '—';
+  const cls = c < 60 ? 'conf conf-low' : 'conf';
+  return `<span class="${cls}">${c.toFixed(1)}%</span>`;
+}
+
+// --- auth ------------------------------------------------------------------------
+
+async function api(path, options = {}) {
+  const headers = Object.assign({}, options.headers || {});
+  if (session) headers['Authorization'] = `Bearer ${session.token}`;
+  const res = await fetch(path, Object.assign({}, options, { headers }));
+  if (res.status === 401) {
+    clearSession();
+    showLogin('Session expired — please sign in again.');
+    throw new Error('unauthenticated');
+  }
+  return res;
+}
+
+function saveSession(s) {
+  session = s;
+  try { sessionStorage.setItem('pramaan_session', JSON.stringify(s)); } catch (e) { /* private browsing, etc. */ }
+}
+
+function clearSession() {
+  session = null;
+  try { sessionStorage.removeItem('pramaan_session'); } catch (e) {}
+}
+
+function restoreSession() {
+  try {
+    const raw = sessionStorage.getItem('pramaan_session');
+    if (raw) session = JSON.parse(raw);
+  } catch (e) { session = null; }
+}
+
+function showLogin(message) {
+  hide('app-view');
+  show('login-view');
+  const err = $('login-error');
+  if (message) { err.textContent = message; show('login-error'); } else { hide('login-error'); }
+}
+
+function showApp() {
+  hide('login-view');
+  show('app-view');
+  $('session-username').textContent = session.username;
+  $('session-role').textContent = session.role.replace('_', ' ');
+  const isEnforcement = session.role === 'inspector' || session.role === 'department_admin';
+  if (isEnforcement) show('dashboard-tab-btn'); else hide('dashboard-tab-btn');
+}
+
+async function login() {
+  const username = $('login-username').value.trim();
+  const password = $('login-password').value;
+  if (!username || !password) return;
+  const form = new URLSearchParams();
+  form.set('username', username);
+  form.set('password', password);
+  try {
+    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
+    const data = await res.json();
+    if (!res.ok) { $('login-error').textContent = data.detail || 'Login failed'; show('login-error'); return; }
+    saveSession({ token: data.access_token, username: data.username, role: data.role });
+    showApp();
+  } catch (e) {
+    $('login-error').textContent = 'Network error: ' + e.message;
+    show('login-error');
+  }
+}
+
+function logout() {
+  clearSession();
+  showLogin();
+}
+
+// --- tabs --------------------------------------------------------------------------
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['scan-tab', 'dashboard-tab'].forEach(hide);
+    show(btn.dataset.tab);
+    if (btn.dataset.tab === 'dashboard-tab') loadDashboard();
+  });
+});
+
+// --- scan flow -----------------------------------------------------------------
+
+async function analyze() {
+  const fileInput = $('file-input');
+  if (!fileInput.files.length) { $('status-msg').textContent = 'Choose an image first.'; return; }
+  const btn = $('analyze-btn');
+  btn.disabled = true;
+  $('status-msg').textContent = 'Running pipeline: preprocessing → OCR → extraction → rule evaluation…';
+  hide('error-card');
+
+  const form = new FormData();
+  form.append('file', fileInput.files[0]);
+
+  try {
+    const res = await api('/api/scans', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) {
+      $('error-box').textContent = data.detail || `Request failed (${res.status})`;
+      show('error-card');
+      $('status-msg').textContent = '';
+      btn.disabled = false;
+      return;
+    }
+    currentScanId = data.id;
+    renderScan(data, fileInput.files[0]);
+    $('status-msg').textContent = 'Done.';
+  } catch (e) {
+    if (e.message !== 'unauthenticated') {
+      $('error-box').textContent = 'Network error: ' + e.message;
+      show('error-card');
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderScan(scan, uploadedFile) {
+  if (scan.status === 'ERROR') {
+    $('error-box').textContent = scan.error_message || 'Unknown pipeline error.';
+    show('error-card');
+    ['verdict-card','evidence-card','ocr-card','fields-card','rules-card','history-card','audit-card','rulepack-card'].forEach(hide);
+    return;
+  }
+  hide('error-card');
+
+  const canReview = session.role === 'inspector' || session.role === 'department_admin';
+
+  const verdict = scan.overall_verdict || 'REVIEW';
+  const banner = $('verdict-banner');
+  banner.className = 'verdict-banner verdict-' + verdict;
+  banner.textContent = verdict.replace('_', '-');
+  $('verdict-meta').textContent =
+    `Scan ${scan.id} · overall confidence ${scan.overall_confidence !== null ? scan.overall_confidence.toFixed(1) + '%' : '—'} ` +
+    `· rule-pack v${scan.rule_pack_version} (${(scan.rule_pack_hash || '').slice(0,12)}…) · ${new Date(scan.created_at).toLocaleString()}`;
+  show('verdict-card');
+
+  if (uploadedFile) {
+    const img = $('preview-img');
+    img.src = URL.createObjectURL(uploadedFile);
+    img.onload = () => {
+      currentImageNaturalSize = { w: img.naturalWidth, h: img.naturalHeight };
+      drawBoxes(scan.fields);
+    };
+  } else {
+    drawBoxes(scan.fields);
+  }
+  show('evidence-card');
+
+  $('ocr-meta').textContent = `engine: ${scan.ocr_engine || '—'} · lang: ${scan.ocr_lang || '—'} · mean word confidence: ${scan.ocr_mean_confidence !== null && scan.ocr_mean_confidence !== undefined ? scan.ocr_mean_confidence.toFixed(1) + '%' : '—'}`;
+  $('ocr-text').textContent = scan.raw_ocr_text || '(no text detected)';
+  show('ocr-card');
+
+  const fbody = $('fields-body');
+  fbody.innerHTML = '';
+  scan.fields.forEach(f => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${f.field_id}</td><td>${f.found ? escapeHtml(f.raw_value || '') : '<em>not found</em>'}</td>
+      <td>${fmtConf(f.confidence)}</td><td>${f.source}</td>`;
+    fbody.appendChild(tr);
+  });
+  show('fields-card');
+
+  const rbody = $('rules-body');
+  rbody.innerHTML = '';
+  scan.evaluations.forEach(e => {
+    const tr = document.createElement('tr');
+    const reviewCell = (e.status === 'REVIEW' && canReview)
+      ? `<div class="review-form">
+           <input type="text" placeholder="corrected value" id="corr-${e.field_id}" />
+           <button class="secondary" onclick="submitReview('${e.field_id}')">Correct &amp; re-check</button>
+         </div>`
+      : (e.status === 'REVIEW' ? '<span class="demo-hint">Sign in as inspector/admin to correct</span>' : '');
+    tr.innerHTML = `<td><span class="badge badge-${e.status}">${e.status}</span></td>
+      <td><strong>${e.field_id}</strong><br/><span style="color:#6b7280">${escapeHtml(e.legal_reference)}</span></td>
+      <td>${escapeHtml(e.reason)}</td>
+      <td><div class="evidence-json">${escapeHtml(JSON.stringify(e.evidence || {}, null, 0))}</div></td>
+      <td>${reviewCell}</td>`;
+    rbody.appendChild(tr);
+  });
+  show('rules-card');
+
+  const hbody = $('history-body');
+  hbody.innerHTML = '';
+  (scan.reviews || []).forEach(r => {
+    const tr = document.createElement('tr');
+    const change = r.previous_verdict !== r.resulting_verdict
+      ? `${escapeHtml(r.previous_verdict || '—')} → ${escapeHtml(r.resulting_verdict || '—')}`
+      : '(no change)';
+    tr.innerHTML = `<td>${escapeHtml(r.field_id)}</td><td>${escapeHtml(r.original_value || '')}</td>
+      <td>${escapeHtml(r.corrected_value)}</td><td>${escapeHtml(r.reviewer)}</td>
+      <td>${change}</td><td>${new Date(r.created_at).toLocaleString()}</td>`;
+    hbody.appendChild(tr);
+  });
+  if ((scan.reviews || []).length) show('history-card'); else hide('history-card');
+
+  if (canReview) {
+    show('audit-card');
+    $('audit-body').innerHTML = '';
+  } else {
+    hide('audit-card');
+  }
+
+  api('/api/rules').then(r => r.json()).then(rp => {
+    $('rulepack-footer').textContent = `Rule pack v${rp.rule_pack_version} · effective ${rp.effective_date} · sha256 ${rp.sha256_hash.slice(0,16)}… · ${rp.fields.length} fields`;
+    show('rulepack-card');
+  });
+}
+
+function drawBoxes(fields) {
+  const canvas = $('bbox-canvas');
+  const img = $('preview-img');
+  if (!currentImageNaturalSize || !img.clientWidth) return;
+  canvas.width = img.clientWidth;
+  canvas.height = img.clientHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const scaleX = img.clientWidth / currentImageNaturalSize.w;
+  const scaleY = img.clientHeight / currentImageNaturalSize.h;
+  fields.forEach(f => {
+    if (!f.bbox) return;
+    ctx.strokeStyle = f.confidence !== null && f.confidence < 60 ? '#b7791f' : '#2563eb';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(f.bbox.left * scaleX, f.bbox.top * scaleY, f.bbox.width * scaleX, f.bbox.height * scaleY);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.font = '11px sans-serif';
+    ctx.fillText(f.field_id, f.bbox.left * scaleX, Math.max(10, f.bbox.top * scaleY - 3));
+  });
+}
+
+async function submitReview(fieldId) {
+  const input = $('corr-' + fieldId);
+  const correctedValue = input.value.trim();
+  if (!correctedValue) return;
+  try {
+    const res = await api(`/api/scans/${currentScanId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field_id: fieldId, corrected_value: correctedValue }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.detail || 'Review failed'); return; }
+    renderScan(data, null);
+  } catch (e) { /* unauthenticated already handled by api() */ }
+}
+
+$('load-audit-btn').addEventListener('click', async () => {
+  if (!currentScanId) return;
+  try {
+    const res = await api(`/api/scans/${currentScanId}/audit`);
+    const events = await res.json();
+    if (!res.ok) { alert(events.detail || 'Could not load audit trail'); return; }
+    const body = $('audit-body');
+    body.innerHTML = '';
+    events.forEach(ev => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${escapeHtml(ev.event_type)}</strong></td><td>${escapeHtml(ev.actor_user_id || '—')}</td>
+        <td><div class="evidence-json">${escapeHtml(JSON.stringify(ev.payload || {}))}</div></td>
+        <td>${new Date(ev.created_at).toLocaleString()}</td>`;
+      body.appendChild(tr);
+    });
+  } catch (e) { /* unauthenticated already handled */ }
+});
+
+// --- dashboard -----------------------------------------------------------------
+
+async function loadDashboard() {
+  try {
+    const res = await api('/api/dashboard/summary');
+    const s = await res.json();
+    if (!res.ok) { $('dashboard-stats').innerHTML = `<div class="error-box">${escapeHtml(s.detail || 'Could not load dashboard')}</div>`; return; }
+
+    const tiles = [
+      ['Total scans', s.total_scans],
+      ['Compliant', s.compliant],
+      ['Non-compliant', s.non_compliant],
+      ['Review', s.review],
+      ['Errors', s.error],
+      ['Mean confidence', s.mean_confidence !== null ? s.mean_confidence.toFixed(1) + '%' : '—'],
+    ];
+    $('dashboard-stats').innerHTML = tiles.map(([l, n]) => `<div class="stat-tile"><div class="n">${n}</div><div class="l">${escapeHtml(l)}</div></div>`).join('');
+
+    const vbody = $('violation-body');
+    vbody.innerHTML = Object.entries(s.violation_frequency).length
+      ? Object.entries(s.violation_frequency).map(([f, c]) => `<tr><td>${escapeHtml(f)}</td><td>${c}</td></tr>`).join('')
+      : '<tr><td colspan="2" class="demo-hint">No violations recorded yet.</td></tr>';
+
+    const rbody = $('recent-scans-body');
+    rbody.innerHTML = s.recent_scans.map(sc => `<tr>
+        <td>${sc.id.slice(0,12)}…</td><td>${sc.status}</td>
+        <td>${sc.overall_verdict ? `<span class="badge badge-${sc.overall_verdict === 'COMPLIANT' ? 'PASS' : sc.overall_verdict === 'NON_COMPLIANT' ? 'FAIL' : 'REVIEW'}">${sc.overall_verdict}</span>` : '—'}</td>
+        <td>${sc.overall_confidence !== null ? sc.overall_confidence.toFixed(1) + '%' : '—'}</td>
+        <td>${new Date(sc.created_at).toLocaleString()}</td>
+      </tr>`).join('');
+  } catch (e) { /* unauthenticated already handled */ }
+}
+
+// --- boot ------------------------------------------------------------------------
+
+$('analyze-btn').addEventListener('click', analyze);
+$('login-btn').addEventListener('click', login);
+$('logout-btn').addEventListener('click', logout);
+$('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+restoreSession();
+if (session) showApp(); else showLogin();
+</script>
+</body>
+</html>
