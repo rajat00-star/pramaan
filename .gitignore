@@ -7,3 +7,4 @@ backend/uploads/*
 backend/tests/fixtures/*.png
 .env
 .DS_Store
+.claude/

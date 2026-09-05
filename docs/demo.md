@@ -51,7 +51,26 @@ role — only cite the field, don't act on it yet.
    — say this explicitly: *"A citizen account never sees this tab, and the
    server enforces that even if someone tried to call the API directly."*).
 2. Point at the real aggregate counts (they reflect the scans just created,
-   live — not canned numbers) and the violation-frequency table.
+   live — not canned numbers), the verdict-distribution bar chart, and the
+   inspector-activity table (real reviewer, real correction count, real
+   timestamp — from the correction just made in step 2).
+3. Click any row in "Recent Cases" — a modal opens with the full case: real
+   image, extracted fields, legal evaluation, OCR text, audit trail, and a
+   "Run replay" button. Click it live: *"Same reproducibility guarantee as
+   the CLI, one click away for a department official."*
+4. Point at "Rule pack in force" — version, effective date, and the SHA-256
+   hash, matching what `/api/rules` and every scan's stored `rule_pack_hash`
+   report.
+
+## 3a. Mobile app (optional, 45–60s, if a phone/simulator is available)
+
+The same Citizen and Inspector flows exist in one React Native/Expo app
+(`frontend/mobile/`) — see `docs/mobile.md` for setup. If time allows: sign
+in as `citizen_demo` on the phone, scan a real product, show the same real
+verdict + evidence rendering as the web app; then sign in as
+`inspector_demo`, open the review queue, correct a field, and show it land
+in the web Department Dashboard's audit trail live — proving both clients
+share one backend and one source of truth, not two separate systems.
 
 ## 4. Reproducibility (30–45s) — the hardest technical claim, proven live
 

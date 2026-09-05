@@ -66,6 +66,31 @@
   .stat-tile .n { font-size: 24px; font-weight: 700; }
   .stat-tile .l { font-size: 11px; color: #6b7280; text-transform: uppercase; }
   .demo-hint { font-size: 12px; color: #6b7280; }
+  .dept-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .dept-header h2 { margin: 0; }
+  .dept-subtitle { font-size: 12px; color: #6b7280; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+  .kpi-tile { background: #f6f7f9; border-radius: 8px; padding: 14px; text-align: center; border: 1px solid var(--border); }
+  .kpi-tile .n { font-size: 26px; font-weight: 800; color: #10233f; }
+  .kpi-tile .l { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .rulepack-line { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: #374151; }
+  .rulepack-line b { color: #10233f; }
+  .chart-wrap { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  .bar-chart { flex: 1; min-width: 220px; display: grid; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 46px; align-items: center; gap: 8px; font-size: 12px; }
+  .bar-track { background: #eef1f5; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .clickable-row { cursor: pointer; }
+  .clickable-row:hover { background: #f6f7f9; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(16,35,63,0.55); display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow-y: auto; z-index: 50; }
+  .modal-overlay.hidden { display: none; }
+  .modal-box { background: #fff; border-radius: 10px; max-width: 760px; width: 100%; padding: 20px; position: relative; }
+  .modal-close { position: absolute; top: 12px; right: 14px; background: transparent; color: #6b7280; font-size: 20px; padding: 2px 8px; }
+  .modal-section { margin-top: 16px; }
+  .modal-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin: 0 0 8px; }
+  .replay-result { font-size: 13px; background: #f6f7f9; border-radius: 6px; padding: 10px; margin-top: 8px; }
+  .replay-ok { color: var(--pass); font-weight: 700; }
+  .replay-fail { color: var(--fail); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -175,25 +200,62 @@
 </main>
 
 <main id="dashboard-tab" class="hidden">
+
   <section class="card">
-    <h2>Enforcement intelligence summary</h2>
-    <div class="stat-grid" id="dashboard-stats"></div>
+    <div class="dept-header">
+      <h2 style="margin:0;text-transform:none;font-size:20px;color:#10233f;">PraMaan Department Dashboard</h2>
+      <span class="dept-subtitle" id="dept-refreshed"></span>
+    </div>
   </section>
+
   <section class="card">
-    <h2>Violation frequency by field</h2>
+    <h2>1 · Overview</h2>
+    <div class="kpi-grid" id="dashboard-stats"></div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Verdict distribution</h2>
+    <div class="chart-wrap" id="verdict-chart"></div>
+  </section>
+
+  <section class="card">
+    <h2>3 · Recent cases <span class="demo-hint">(click a row for full case details)</span></h2>
+    <table>
+      <thead><tr><th>Case</th><th>Status</th><th>Verdict</th><th>Confidence</th><th>When</th></tr></thead>
+      <tbody id="recent-scans-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>4 · Violation frequency by field</h2>
     <table>
       <thead><tr><th>Field</th><th>Failures</th></tr></thead>
       <tbody id="violation-body"></tbody>
     </table>
   </section>
+
   <section class="card">
-    <h2>Recent scans</h2>
+    <h2>5 · Inspector activity</h2>
     <table>
-      <thead><tr><th>Scan</th><th>Status</th><th>Verdict</th><th>Confidence</th><th>When</th></tr></thead>
-      <tbody id="recent-scans-body"></tbody>
+      <thead><tr><th>Inspector</th><th>Corrections made</th><th>Last review</th></tr></thead>
+      <tbody id="inspector-activity-body"></tbody>
     </table>
   </section>
+
+  <section class="card">
+    <h2>6 · Rule pack in force</h2>
+    <div class="rulepack-line" id="dept-rulepack-line"></div>
+  </section>
+
 </main>
+
+<div class="modal-overlay hidden" id="case-modal">
+  <div class="modal-box">
+    <button class="modal-close" id="case-modal-close" aria-label="Close">&times;</button>
+    <h2 style="margin-top:0;">Case details</h2>
+    <div id="case-modal-body"></div>
+  </div>
+</div>
 
 </div>
 
@@ -490,15 +552,34 @@ async function loadDashboard() {
     const s = await res.json();
     if (!res.ok) { $('dashboard-stats').innerHTML = `<div class="error-box">${escapeHtml(s.detail || 'Could not load dashboard')}</div>`; return; }
 
+    $('dept-refreshed').textContent = 'Live as of ' + new Date().toLocaleString();
+
     const tiles = [
       ['Total scans', s.total_scans],
       ['Compliant', s.compliant],
       ['Non-compliant', s.non_compliant],
-      ['Review', s.review],
+      ['Pending review', s.pending_review_count],
+      ['Reviewed today', s.reviews_today],
       ['Errors', s.error],
       ['Mean confidence', s.mean_confidence !== null ? s.mean_confidence.toFixed(1) + '%' : '—'],
     ];
-    $('dashboard-stats').innerHTML = tiles.map(([l, n]) => `<div class="stat-tile"><div class="n">${n}</div><div class="l">${escapeHtml(l)}</div></div>`).join('');
+    $('dashboard-stats').innerHTML = tiles.map(([l, n]) => `<div class="kpi-tile"><div class="n">${n}</div><div class="l">${escapeHtml(l)}</div></div>`).join('');
+
+    // Verdict distribution — a plain, dependency-free horizontal bar chart (SVG-free,
+    // just divs) built entirely from the real counts above, never estimated.
+    const verdictRows = [
+      ['Compliant', s.compliant, 'var(--pass)'],
+      ['Non-compliant', s.non_compliant, 'var(--fail)'],
+      ['Review', s.review, 'var(--review)'],
+    ];
+    const verdictMax = Math.max(1, ...verdictRows.map(r => r[1]));
+    $('verdict-chart').innerHTML = `<div class="bar-chart">${verdictRows.map(([label, n, color]) => `
+      <div class="bar-row">
+        <span>${label}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(n / verdictMax) * 100}%;background:${color};"></div></div>
+        <span style="text-align:right;">${n}</span>
+      </div>`).join('')}</div>
+      <div class="demo-hint">Total scans evaluated: ${s.total_scans}</div>`;
 
     const vbody = $('violation-body');
     vbody.innerHTML = Object.entries(s.violation_frequency).length
@@ -506,14 +587,118 @@ async function loadDashboard() {
       : '<tr><td colspan="2" class="demo-hint">No violations recorded yet.</td></tr>';
 
     const rbody = $('recent-scans-body');
-    rbody.innerHTML = s.recent_scans.map(sc => `<tr>
+    rbody.innerHTML = s.recent_scans.map(sc => `<tr class="clickable-row" onclick="openCaseModal('${sc.id}')">
         <td>${sc.id.slice(0,12)}…</td><td>${sc.status}</td>
         <td>${sc.overall_verdict ? `<span class="badge badge-${sc.overall_verdict === 'COMPLIANT' ? 'PASS' : sc.overall_verdict === 'NON_COMPLIANT' ? 'FAIL' : 'REVIEW'}">${sc.overall_verdict}</span>` : '—'}</td>
         <td>${sc.overall_confidence !== null ? sc.overall_confidence.toFixed(1) + '%' : '—'}</td>
         <td>${new Date(sc.created_at).toLocaleString()}</td>
       </tr>`).join('');
+
+    const iabody = $('inspector-activity-body');
+    iabody.innerHTML = s.inspector_activity.length
+      ? s.inspector_activity.map(a => `<tr><td>${escapeHtml(a.reviewer)}</td><td>${a.review_count}</td><td>${new Date(a.last_review_at).toLocaleString()}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="demo-hint">No corrections recorded yet.</td></tr>';
+
+    const rp = s.rule_pack;
+    $('dept-rulepack-line').innerHTML = `
+      <span><b>Version</b> v${escapeHtml(rp.rule_pack_version)}</span>
+      <span><b>Effective</b> ${escapeHtml(rp.effective_date)}</span>
+      <span><b>Fields</b> ${rp.field_count}</span>
+      <span><b>SHA-256</b> ${escapeHtml(rp.sha256_hash.slice(0,20))}…</span>`;
   } catch (e) { /* unauthenticated already handled */ }
 }
+
+// --- case modal (image + evidence + audit + replay) ------------------------------
+
+async function openCaseModal(scanId) {
+  const overlay = $('case-modal');
+  const body = $('case-modal-body');
+  body.innerHTML = '<p class="status-msg">Loading case…</p>';
+  show('case-modal');
+  overlay.classList.remove('hidden');
+
+  try {
+    const res = await api(`/api/scans/${scanId}`);
+    const scan = await res.json();
+    if (!res.ok) { body.innerHTML = `<div class="error-box">${escapeHtml(scan.detail || 'Could not load case')}</div>`; return; }
+
+    const verdict = scan.overall_verdict || 'REVIEW';
+    const fieldsRows = scan.fields.map(f => `<tr><td>${escapeHtml(f.field_id)}</td><td>${f.found ? escapeHtml(f.raw_value || '') : '<em>not found</em>'}</td><td>${fmtConf(f.confidence)}</td></tr>`).join('');
+    const evalRows = scan.evaluations.map(e => `<tr><td><span class="badge badge-${e.status}">${e.status}</span></td><td>${escapeHtml(e.field_id)}</td><td>${escapeHtml(e.reason)}</td></tr>`).join('');
+
+    body.innerHTML = `
+      <div class="verdict-banner verdict-${verdict}" style="font-size:16px;padding:10px;">${verdict.replace('_','-')}</div>
+      <div class="meta-row">Scan ${scan.id} · confidence ${scan.overall_confidence !== null ? scan.overall_confidence.toFixed(1) + '%' : '—'} · rule-pack v${scan.rule_pack_version}</div>
+
+      <div class="modal-section image-wrap">
+        <img id="modal-case-image" alt="case image" style="max-height:280px;" />
+      </div>
+
+      <div class="modal-section">
+        <h3>Extracted fields</h3>
+        <table><thead><tr><th>Field</th><th>Value</th><th>Confidence</th></tr></thead><tbody>${fieldsRows}</tbody></table>
+      </div>
+
+      <div class="modal-section">
+        <h3>Legal evaluation</h3>
+        <table><thead><tr><th>Status</th><th>Field</th><th>Reason</th></tr></thead><tbody>${evalRows}</tbody></table>
+      </div>
+
+      <div class="modal-section">
+        <h3>OCR text</h3>
+        <pre style="max-height:140px;overflow:auto;">${escapeHtml(scan.raw_ocr_text || '(no text detected)')}</pre>
+      </div>
+
+      <div class="modal-section">
+        <h3>Audit trail</h3>
+        <table><thead><tr><th>Event</th><th>When</th></tr></thead><tbody id="modal-audit-body"><tr><td colspan="2" class="demo-hint">Loading…</td></tr></tbody></table>
+      </div>
+
+      <div class="modal-section">
+        <h3>Historical rule replay</h3>
+        <button class="secondary" onclick="runReplay('${scanId}')">Run replay</button>
+        <div id="modal-replay-result"></div>
+      </div>
+    `;
+
+    // A plain <img src="/api/scans/.../image"> can't carry the Authorization
+    // header, so the image is fetched as a blob and shown via an object URL —
+    // same fix as the scan tab's own upload preview needed, just for a
+    // server-stored image instead of a freshly-picked local file.
+    api(`/api/scans/${scanId}/image`)
+      .then(r => (r.ok ? r.blob() : null))
+      .then(blob => { if (blob) $('modal-case-image').src = URL.createObjectURL(blob); })
+      .catch(() => {});
+
+    const auditRes = await api(`/api/scans/${scanId}/audit`);
+    const events = await auditRes.json();
+    $('modal-audit-body').innerHTML = auditRes.ok
+      ? events.map(ev => `<tr><td>${escapeHtml(ev.event_type)}</td><td>${new Date(ev.created_at).toLocaleString()}</td></tr>`).join('')
+      : '<tr><td colspan="2" class="demo-hint">Could not load audit trail.</td></tr>';
+  } catch (e) {
+    if (e.message !== 'unauthenticated') body.innerHTML = '<div class="error-box">Network error loading case.</div>';
+  }
+}
+
+async function runReplay(scanId) {
+  const target = $('modal-replay-result');
+  target.innerHTML = '<p class="status-msg">Replaying against the exact historical rule pack…</p>';
+  try {
+    const res = await api(`/api/scans/${scanId}/replay`);
+    const r = await res.json();
+    if (!res.ok) { target.innerHTML = `<div class="error-box">${escapeHtml(r.detail || 'Replay failed')}</div>`; return; }
+    target.innerHTML = `<div class="replay-result">
+      Original verdict: <b>${escapeHtml(r.original_overall_verdict || '—')}</b> (rule pack v${escapeHtml(r.original_rule_pack_version || '—')})<br/>
+      Replayed verdict: <b>${escapeHtml(r.replayed_overall_verdict || '—')}</b> (rule pack v${escapeHtml(r.replayed_rule_pack_version || '—')})<br/>
+      <span class="${r.reproduced ? 'replay-ok' : 'replay-fail'}">${r.reproduced ? '✓ Reproduced exactly' : '✕ Verdict differs from the original'}</span>
+    </div>`;
+  } catch (e) {
+    if (e.message !== 'unauthenticated') target.innerHTML = '<div class="error-box">Network error running replay.</div>';
+  }
+}
+
+$('case-modal-close').addEventListener('click', () => hide('case-modal'));
+$('case-modal').addEventListener('click', (e) => { if (e.target.id === 'case-modal') hide('case-modal'); });
 
 // --- boot ------------------------------------------------------------------------
 

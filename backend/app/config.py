@@ -37,7 +37,10 @@ class Settings(BaseSettings):
     # Defaults to common local-dev origins only — NOT "*" — since authenticated
     # requests carry a bearer token that a permissive CORS policy would expose to
     # any origin able to trick a user's browser into calling this API.
-    cors_allow_origins: str = "http://localhost:8000,http://127.0.0.1:8000"
+    # :8090 is the mobile app's `expo start --web` dev port (frontend/mobile) —
+    # native iOS/Android requests don't go through browser CORS at all, this
+    # only matters when exercising the mobile app's web target in development.
+    cors_allow_origins: str = "http://localhost:8000,http://127.0.0.1:8000,http://localhost:8090,http://127.0.0.1:8090"
 
     secret_key: str = _INSECURE_DEV_SECRET_KEY
     access_token_expire_minutes: int = 720  # 12h

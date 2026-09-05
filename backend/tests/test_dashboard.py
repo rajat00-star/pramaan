@@ -34,3 +34,33 @@ def test_dashboard_recent_scans_are_present_and_bounded(client, inspector_client
     summary = inspector_client.get("/api/dashboard/summary").json()
     assert len(summary["recent_scans"]) <= 10
     assert len(summary["recent_scans"]) >= 1
+
+
+def test_dashboard_reports_rule_pack_summary(inspector_client):
+    summary = inspector_client.get("/api/dashboard/summary").json()
+    rp = summary["rule_pack"]
+    assert rp["rule_pack_version"]
+    assert rp["effective_date"]
+    assert len(rp["sha256_hash"]) == 64
+    assert rp["field_count"] >= 7
+
+
+def test_dashboard_inspector_activity_reflects_real_corrections(client, inspector_client, noncompliant_label_path):
+    scan = _post(client, noncompliant_label_path)
+
+    before = inspector_client.get("/api/dashboard/summary").json()
+    before_count = next(
+        (a["review_count"] for a in before["inspector_activity"] if a["reviewer"] == "inspector_demo"), 0
+    )
+    before_reviews_today = before["reviews_today"]
+
+    resp = inspector_client.post(
+        f"/api/scans/{scan['id']}/review",
+        json={"field_id": "net_quantity", "corrected_value": "500 g"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    after = inspector_client.get("/api/dashboard/summary").json()
+    after_count = next(a["review_count"] for a in after["inspector_activity"] if a["reviewer"] == "inspector_demo")
+    assert after_count == before_count + 1
+    assert after["reviews_today"] == before_reviews_today + 1

@@ -25,6 +25,7 @@ versus an honest placeholder. Deeper detail lives in:
 - [`docs/legal/rule_engine.md`](docs/legal/rule_engine.md) — rule versioning, provenance, reproducibility
 - [`docs/security.md`](docs/security.md) — threat model and what's actually mitigated
 - [`docs/deployment.md`](docs/deployment.md) — Docker, Postgres, environment config
+- [`docs/mobile.md`](docs/mobile.md) — the React Native/Expo mobile app (citizen + inspector)
 - [`docs/demo.md`](docs/demo.md) — the exact SIH demo script
 - [`docs/legal/lmpc_2011_source.md`](docs/legal/lmpc_2011_source.md) — verbatim legal source citations
 
@@ -60,7 +61,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md). Summary:
 
 | Layer | What runs today |
 |---|---|
-| Frontend | One static HTML/JS page ([`frontend/index.html`](frontend/index.html)) — login, citizen scan flow, inspector review, department dashboard. Served by the same FastAPI process. |
+| Web frontend | One static HTML/JS page ([`frontend/index.html`](frontend/index.html)) — login, citizen scan flow, inspector review, and a full **Department Dashboard** (overview KPIs, verdict-distribution chart, clickable case details with image/evidence/audit/replay, inspector activity, rule-pack info). Served by the same FastAPI process. |
+| Mobile app | React Native + Expo + TypeScript, one app for both Citizen and Inspector roles ([`frontend/mobile/`](frontend/mobile/), see [`docs/mobile.md`](docs/mobile.md)). Same backend, same JWT auth, no legal logic duplicated on-device. |
 | API | FastAPI, JWT auth, role-based authorization on every protected route |
 | Pipeline | Preprocessing (OpenCV) → label detection (honest full-image fallback) → OCR (real Tesseract) → extraction (regex, English + Hindi keywords) → rule engine → verdict |
 | Data | SQLAlchemy ORM; SQLite for local dev, PostgreSQL verified for production (see §11) |
@@ -208,12 +210,13 @@ for a long-lived production deployment, disclosed in §12 of
 
 ## 12. Deployment
 
-Full instructions in [`docs/deployment.md`](docs/deployment.md). A
-`Dockerfile` and `docker-compose.yml` (app + PostgreSQL) exist and are written
-against the same dependency versions verified locally, but — **disclosed
-honestly** — Docker itself is not installed in the environment this was built
-in, so `docker build`/`docker compose up` have not been executed here. Native
-(non-Docker) setup below is what was actually run and verified.
+Full instructions in [`docs/deployment.md`](docs/deployment.md). `docker
+compose up -d --build` has been run and verified directly: both containers
+(`app`, `db`) come up healthy, PostgreSQL 16 is the real datastore (not
+SQLite), login/scan/dashboard all work end-to-end against it at
+`http://127.0.0.1:8000`, and `/docs` (Swagger) serves correctly. Native
+(non-Docker) setup below also still works and is the faster loop for local
+development.
 
 ## 13. Testing
 
@@ -225,7 +228,7 @@ pytest -q -s tests/test_pipeline_e2e.py     # real photo -> OCR -> verdict, with
 ruff check app tests                        # lint (also runs in CI)
 ```
 
-**95 tests, 95 passing** (confirmed by actually running the suite — see the
+**117 tests, 117 passing, 1 intentionally skipped** (confirmed by actually running the suite — see the
 CHANGES/verification trail in project history for the exact numbers at each
 stage of development, not asserted here without having run it). Categories:
 rule-engine unit tests (First Schedule Table I/II boundaries, confidence
@@ -252,7 +255,29 @@ summary:
 - `common_generic_name` extraction is the weakest of the seven fields (keyword-prefix dependent).
 - Net-quantity checking validates the *declaration*, not the package's actual physical contents (no scale in the loop) — stated in every such evaluation's evidence.
 - Font-size-in-mm measurement: explicitly out of MVP scope per the original deck.
-- Docker/CI are written but not executed in this environment (no Docker installed; GitHub Actions doesn't run locally) — disclosed, not claimed as verified.
+- CI (GitHub Actions) is written but doesn't run locally — Docker itself is now verified (see §12), CI execution is not.
+- OCR-level determinism is NOT guaranteed across different Tesseract builds (verified directly: the same real photo produced a clean COMPLIANT verdict on Docker's Tesseract 5.5.0 but REVIEW with corrupted evidence text on local Homebrew Tesseract 5.5.3 — see `docs/demo/golden_dataset/compliant_tata_tea_docker/evidence.md`). Legal-rule-level reproducibility (`/replay`, rule-pack-hash-based) is unaffected by this and holds perfectly.
+- Mobile app camera/gallery capture could not be tested on a real device or simulator in this environment (no Xcode, no Android SDK) — verified instead via `expo start --web` against the live Docker backend and via TypeScript strict-mode compilation. See `docs/mobile.md` for exactly what was and wasn't verified.
+
+## 15a. Mobile app
+
+One React Native + Expo + TypeScript app for both **Citizen** and
+**Inspector** roles (`frontend/mobile/`) — role-based routing after login,
+server-side RBAC remains authoritative. Full setup, physical-device
+networking, and exactly what was/wasn't verified: [`docs/mobile.md`](docs/mobile.md).
+
+```bash
+cd frontend/mobile
+npm install
+cp .env.example .env   # set EXPO_PUBLIC_API_URL for your target — see docs/mobile.md
+npx expo start
+```
+
+Citizen: scan a label (camera or gallery) → real OCR/extraction/rule-engine
+verdict → evidence → history. Inspector: review queue → case detail (real
+image + evidence) → correct a field → audit-recorded. No legal rule, OCR, or
+extraction logic runs on-device — the mobile app is a client of the same
+backend and APIs as the website.
 
 ## 15. Demo instructions
 

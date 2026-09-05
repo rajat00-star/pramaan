@@ -2,13 +2,14 @@
 
 ## Honesty note up front
 
-The Dockerfile and docker-compose.yml below are written against the exact
-dependency versions verified to work in local development (including a real
-PostgreSQL 16 instance — see README §11), but **Docker itself is not
-installed in the environment this project was built in**, so
-`docker build`/`docker compose up` have not been executed here. If something
-in the Docker path doesn't work on the first try in your environment, that's
-the honest reason why — the native setup below is what was actually run.
+`docker compose up -d --build` has been run and verified directly in this
+project: both containers (`app`, `db`) reach a healthy state, the app
+container's PostgreSQL connection is real (not SQLite), and a full
+authenticated cycle — login, image upload, real OCR/extraction/rule-engine
+verdict, dashboard aggregation, review correction, audit trail, replay — was
+exercised end-to-end against `http://127.0.0.1:8000` while it ran. `/docs`
+(Swagger) and the existing web app were both confirmed working against the
+Dockerized instance, not just the native dev server.
 
 ## Native setup (verified)
 
@@ -51,11 +52,12 @@ deployed environment with real data, Alembic (or an equivalent) becomes
 necessary and is not yet wired up. This is a genuine gap for long-lived
 production use, not a hidden one.
 
-## Docker (written, not executed here)
+## Docker (verified)
 
 ```bash
 # From the repo root:
-docker compose up --build
+docker compose up -d --build
+docker compose ps      # both services should show healthy/running
 ```
 
 `docker-compose.yml` starts two services: `db` (postgres:16-alpine, with a
@@ -80,6 +82,15 @@ containerize independently), there is no `worker` (synchronous pipeline, see
 yet). Only `app` + `db` are real, separate containers. Splitting the frontend
 out and adding a worker+Redis service are the next real infrastructure
 changes for production, not implemented here.
+
+## Mobile app
+
+The React Native/Expo mobile app (`frontend/mobile/`) is a separate client,
+not something this Docker setup builds or serves — it connects to whichever
+backend URL you configure (Docker or native dev server, see
+[`docs/mobile.md`](mobile.md)). No mobile-specific server-side deployment
+step exists; `EXPO_PUBLIC_API_URL` in `frontend/mobile/.env` is the only
+thing that needs to point at wherever the backend above is actually running.
 
 ## Environment reference
 

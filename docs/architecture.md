@@ -37,6 +37,12 @@ Image → Preprocess → Detect region → OCR → Extract fields → Rule engin
 | `app/storage.py` | `ObjectStorage` interface; `LocalObjectStorage` (real); `S3ObjectStorage` (documented, not implemented) | Real + honest abstraction |
 | `app/routes/*.py` | FastAPI routers: scan, review, audit, dashboard, rules, auth | Real |
 | `app/models.py` | SQLAlchemy ORM, Postgres-compatible types throughout | Real |
+| `frontend/index.html` | Web client: citizen scan flow, inspector review, Department Dashboard (KPIs, verdict chart, case detail modal with audit/replay, inspector activity, rule pack) | Real |
+| `frontend/mobile/` | React Native/Expo/TypeScript client: one app, Citizen + Inspector roles, same backend and APIs | Real (see `docs/mobile.md` for exactly what was device/simulator-verified vs web-preview-verified) |
+
+Both clients are presentation layers only — neither duplicates OCR, extraction,
+or legal-rule logic. Every verdict either client shows came from the same
+`POST /api/scans` → `run_pipeline()` call on this same backend.
 
 ## 3. Data flow for one scan
 

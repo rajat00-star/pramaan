@@ -4,6 +4,31 @@
   "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
   "cases": [
     {
+      "id": "compliant_tata_tea_docker",
+      "product": "Tata Tea Premium, 250 g",
+      "category": "Real camera photo of a real commercial product",
+      "image": "compliant_tata_tea_docker/photo.png",
+      "case_type": "COMPLIANT",
+      "expected_verdict": "COMPLIANT",
+      "actual_verdict": "COMPLIANT",
+      "status": "COMPLETE_BUT_ENVIRONMENT_DEPENDENT",
+      "scan_id": "9f8f979570f34f3dba0518cb476b1125",
+      "required_fields": ["manufacturer_packer_importer", "common_generic_name", "net_quantity", "date_of_manufacture", "retail_sale_price", "consumer_care_details"],
+      "extracted_fields": {
+        "manufacturer_packer_importer": {"found": true, "confidence": 95.75, "raw_value": "Tata Consumer Products Limited,"},
+        "common_generic_name": {"found": true, "confidence": 96.0, "raw_value": "Tea"},
+        "net_quantity": {"found": true, "confidence": 93.0, "raw_value": "250g"},
+        "date_of_manufacture": {"found": true, "confidence": 84.0, "raw_value": "15/JAN/2025"},
+        "retail_sale_price": {"found": true, "confidence": 81.5, "raw_value": "% 170.00 (inclusive of all taxes)"},
+        "consumer_care_details": {"found": true, "confidence": 96.0, "raw_value": "Executive,"},
+        "country_of_origin": {"found": false, "confidence": null, "raw_value": null}
+      },
+      "confidence": 91.04,
+      "legal_rule_version": "1",
+      "rule_pack_hash": "f7be6482b898559dd2f00f3dd4247a548ab2434c37f5618c1a905994bd6c2be3",
+      "notes": "First genuine real-product COMPLIANT verdict, found while verifying the mobile app's Citizen Home screen against the Dockerized backend (real PostgreSQL). Reproduced 3x independently, byte-for-byte identical each time, and confirmed reproducible via /replay. CRITICAL CAVEAT: this same photo, run earlier this session against the LOCAL dev server (Homebrew Tesseract 5.5.3), reached only REVIEW with two corrupted-evidence PASSes -- see compliant_pending/attempts/tata_tea_premium/evidence.md. Root cause: Docker's Tesseract 5.5.0 (Debian apt) segments this image's multi-column layout differently than Tesseract 5.5.3 (Homebrew). OCR-level determinism is NOT guaranteed across Tesseract builds; legal-rule-level reproducibility (rule-pack-hash replay) is unaffected and held perfectly. See compliant_tata_tea_docker/evidence.md for full analysis. NOT added as a pytest regression test because it would fail against the test suite's local Tesseract build."
+    },
+    {
       "id": "compliant_pending",
       "product": "N/A — blocked",
       "category": "N/A",

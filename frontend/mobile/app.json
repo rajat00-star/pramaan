@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "PraMaan",
+    "slug": "pramaan-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "pramaan",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "in.gov.sih.pramaan.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PraMaan needs camera access so you can photograph a product label to check its compliance.",
+        "NSPhotoLibraryUsageDescription": "PraMaan needs photo library access so you can choose an existing product photo to check its compliance."
+      }
+    },
+    "android": {
+      "package": "in.gov.sih.pramaan.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PraMaan needs photo library access so you can choose an existing product photo to check its compliance.",
+          "cameraPermission": "PraMaan needs camera access so you can photograph a product label to check its compliance."
+        }
+      ]
+    ]
+  }
+}

@@ -125,6 +125,19 @@ class ReplayOut(BaseModel):
     evaluations: list[RuleEvaluationOut]
 
 
+class InspectorActivityOut(BaseModel):
+    reviewer: str
+    review_count: int
+    last_review_at: datetime
+
+
+class RulePackSummaryOut(BaseModel):
+    rule_pack_version: str
+    effective_date: str
+    sha256_hash: str
+    field_count: int
+
+
 class DashboardSummaryOut(BaseModel):
     total_scans: int
     compliant: int
@@ -135,6 +148,9 @@ class DashboardSummaryOut(BaseModel):
     mean_confidence: float | None
     violation_frequency: dict[str, int]  # field_id -> count of FAIL across all scans
     recent_scans: list[ScanSummaryOut]
+    inspector_activity: list[InspectorActivityOut]  # reviewer -> corrections made, most active first
+    reviews_today: int
+    rule_pack: RulePackSummaryOut
 
 
 class UserOut(BaseModel):
