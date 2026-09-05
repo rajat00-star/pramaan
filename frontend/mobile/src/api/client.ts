@@ -8,6 +8,14 @@ export function registerUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
+/** Exposed so other request paths that don't go through request() below (the
+ * scan-upload path — see scans.ts — uses expo-file-system's native upload
+ * task instead of fetch()) can still trigger the same "log out on 401"
+ * behavior instead of duplicating the onUnauthorized wiring. */
+export function notifyUnauthorized(): void {
+  onUnauthorized?.();
+}
+
 let currentToken: string | null = null;
 export function setAuthToken(token: string | null): void {
   currentToken = token;
@@ -16,7 +24,6 @@ export function setAuthToken(token: string | null): void {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
-  formData?: FormData;
   skipAuth?: boolean;
 }
 
@@ -27,10 +34,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   let body: BodyInit | undefined;
-  if (options.formData) {
-    body = options.formData;
-    // Do NOT set Content-Type for multipart — fetch sets the boundary itself.
-  } else if (options.body !== undefined) {
+  if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(options.body);
   }
@@ -65,7 +69,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export const apiClient = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
-  postForm: <T>(path: string, formData: FormData) => request<T>(path, { method: 'POST', formData }),
   /** Login uses application/x-www-form-urlencoded (OAuth2PasswordRequestForm on
    * the backend), not JSON — a deliberate exception to the json-by-default rule. */
   postFormUrlEncoded: async <T>(path: string, fields: Record<string, string>): Promise<T> => {

@@ -11,10 +11,19 @@ import { colors, spacing } from '../../theme/colors';
 
 type Nav = NativeStackNavigationProp<CitizenStackParamList, 'ScanCapture'>;
 
-function mimeTypeForUri(uri: string): string {
+/** Fallback only — expo-image-picker's `asset.mimeType` is preferred and used
+ * first (see goToPreview below); this covers the rare case it's missing.
+ * iOS commonly returns HEIC/HEIF for library photos (the OS default capture
+ * format since iOS 11), which must be labeled correctly rather than
+ * defaulted to JPEG: mislabeling it would let it reach the backend with a
+ * mismatched Content-Type, trading a clear "unsupported format" message for
+ * a confusing pipeline failure. */
+export function mimeTypeForUri(uri: string): string {
   const ext = uri.split('.').pop()?.toLowerCase();
   if (ext === 'png') return 'image/png';
   if (ext === 'webp') return 'image/webp';
+  if (ext === 'heic') return 'image/heic';
+  if (ext === 'heif') return 'image/heif';
   return 'image/jpeg';
 }
 

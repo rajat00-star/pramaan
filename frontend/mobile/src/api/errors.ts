@@ -18,9 +18,20 @@ export class NetworkError extends Error {
   }
 }
 
+/** Thrown when a locally-picked photo could not be read/uploaded — distinct
+ * from NetworkError so the user gets an actionable message (retake/reselect)
+ * instead of "check your connection", since the server was never the issue. */
+export class PhotoUploadError extends Error {
+  constructor(message = 'Your photo could not be uploaded. Please retake the photo or choose a different one and try again.') {
+    super(message);
+    this.name = 'PhotoUploadError';
+  }
+}
+
 /** Maps a backend HTTP status + optional detail message to a short, safe,
  * user-facing message. Never surfaces raw exception text or stack traces. */
 export function friendlyErrorMessage(err: unknown): string {
+  if (err instanceof PhotoUploadError) return err.message;
   if (err instanceof NetworkError) return err.message;
   if (err instanceof ApiError) {
     switch (err.status) {
